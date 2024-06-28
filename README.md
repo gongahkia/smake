@@ -1,6 +1,6 @@
 # `SMAke`
 
-16-bit snake game in x86 assembly that can theoretically run without any Operating System.
+16-bit snake game in x86 assembly that can theoretically run on any IBM DOS-enabled PC.
 
 ## Install
 
