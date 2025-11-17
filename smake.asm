@@ -89,18 +89,27 @@ draw_fruit:
     ret
 
 generate_fruit:
+    ; Get timer ticks for randomization
     mov ah, 0
     int 1Ah
-    xor ah, ah
-    mov cx, ax
+    ; DX:CX contains tick count
+    ; Use low word for X coordinate
+    mov ax, dx
+    xor dx, dx
+    mov bl, 78      ; Width - 2 (avoid edges)
+    div bl
+    add al, 1       ; Add 1 to avoid 0
+    mov [fruit_x], al
+    
+    ; Use high word for Y coordinate
+    mov ah, 0
+    int 1Ah
     mov ax, cx
     xor dx, dx
-    div byte [screen_width]
-    mov [fruit_x], dl
-    mov ax, cx
-    xor dx, dx
-    div byte [screen_height]
-    mov [fruit_y], dl
+    mov bl, 23      ; Height - 2 (avoid edges)
+    div bl
+    add al, 1       ; Add 1 to avoid 0
+    mov [fruit_y], al
     ret
 
 get_input:
@@ -219,9 +228,17 @@ no_self_collision:
     ret
 
 delay:
-    mov cx, 0FFFFh
+    ; Slower delay - multiple nested loops
+    mov cx, 2       ; Outer loop count
+delay_outer:
+    push cx
+    mov cx, 0FFFFh  ; Inner loop
 delay_loop:
+    nop
+    nop
     loop delay_loop
+    pop cx
+    loop delay_outer
     ret
 
 game_over:

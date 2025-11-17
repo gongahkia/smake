@@ -2,45 +2,26 @@
 
 16-bit snake game in x86 assembly that can theoretically run on any IBM DOS-enabled PC.
 
-## Install
+## Usage
 
-### Linux (Debian-based)
+Smake requires a Debian-based distro, and depends on [NASM](https://www.nasm.us/) and [DOSBox](https://www.dosbox.com/).
+
+1. First execute the below.
 
 ```console
 $ sudo apt install make nasm dosbox
-$ git clone https://github.com/gongahkia/smake
-$ cd smake
+$ git clone https://github.com/gongahkia/smake && cd smake
 $ make build
-```
-
-### macOS
-
-```console
-$ brew install nasm dosbox
-$ git clone https://github.com/gongahkia/smake
-$ cd smake
-$ make build
-```
-
-## Usage
-
-```console
 $ make run
 ```
 
-Then in DOSBox, type:
-```
+2. Then run the below in DOSBox.
+
+```bash
 mount c .
 c:
 smake.com
 ```
-
-### Controls
-
-- `W` - Move up
-- `S` - Move down
-- `A` - Move left
-- `D` - Move right
 
 ## Notes
 
