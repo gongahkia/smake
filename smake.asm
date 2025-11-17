@@ -1,29 +1,26 @@
 ; ----- SMAKE -----
-    ; i hope this works please
-    ; smake is assembled with NASM, runs on DOS
+; Snake game for DOS - assembled with NASM
 
 org 100h                ; DOS .COM program starts at 100h
 
-section .data
-    screen_width db 80
-    screen_height db 25
-    snake_char db 'O'
-    fruit_char db '@'
-    key db 0
-    score_msg db "SMAKE - Use WASD$"
-    game_over_message db "Game Over! Press any key to exit...", 0Dh, 0Ah, "$"
-    
-section .bss
-    snake_x resb 255
-    snake_y resb 255
-    snake_length resb 1
-    fruit_x resb 1
-    fruit_y resb 1
+jmp start               ; Jump over data section
 
-section .text
-    global _start
+; ----- DATA SECTION -----
+screen_width db 80
+screen_height db 25
+snake_char db 219       ; Full block character
+fruit_char db 4         ; Diamond character
+direction db 'd'
+snake_length db 3
+snake_x times 255 db 0
+snake_y times 255 db 0
+fruit_x db 20
+fruit_y db 10
+score_msg db "SNAKE - WASD to move | Score: ", 0
+game_over_msg db "GAME OVER! Press any key...", 0
 
-_start:
+; ----- CODE SECTION -----
+start:
     ; Set video mode to text 80x25
     mov ax, 0x0003
     int 10h
@@ -33,146 +30,193 @@ _start:
     mov ch, 0x20
     int 10h
     
-    ; Initialize snake
-    mov byte [snake_length], 3
+    ; Initialize snake position
     mov byte [snake_x], 40
     mov byte [snake_y], 12
     mov byte [snake_x + 1], 39
     mov byte [snake_y + 1], 12
     mov byte [snake_x + 2], 38
     mov byte [snake_y + 2], 12
-    mov byte [key], 'd'  ; Start moving right
+    
     call generate_fruit
 
 game_loop:
-    call clear_screen
-    call draw_border
-    call draw_snake
-    call draw_fruit
-    call draw_score
+    call draw_screen
     call get_input
-    call update_snake_position
+    call update_snake
     call check_collisions
     cmp ax, 0
-    jne collision_detected
-    call check_eat_fruit
+    jne game_over
+    call check_fruit
     call delay
     jmp game_loop
 
-collision_detected:
-    call game_over
-    jmp exit
-
-clear_screen:
-    mov ah, 0x06
-    mov al, 0
-    mov bh, 0x07
-    mov cx, 0
-    mov dx, 184Fh
+game_over:
+    ; Clear screen
+    mov ax, 0x0003
     int 10h
-    ret
-
-draw_border:
-    ; Draw top border
-    mov ah, 0x02
-    mov bh, 0
-    mov dx, 0       ; Row 0, col 0
-    int 10h
-    mov cx, 80
-draw_top:
-    mov ah, 0x0E
-    mov al, '#'
-    int 10h
-    loop draw_top
     
-    ; Draw bottom border
+    ; Set cursor position
     mov ah, 0x02
     mov bh, 0
-    mov dx, 1800h   ; Row 24, col 0
+    mov dx, 0x0C20      ; Row 12, col 32
     int 10h
-    mov cx, 80
-draw_bottom:
+    
+    ; Print game over message using simpler method
+    mov si, game_over_msg
+print_game_over:
+    lodsb
+    or al, al
+    jz wait_for_key
     mov ah, 0x0E
-    mov al, '#'
+    mov bl, 0x0C        ; Red text
     int 10h
-    loop draw_bottom
-    ret
+    jmp print_game_over
+    
+wait_for_key:
+    ; Clear keyboard buffer first
+    mov ah, 0x01
+    int 16h
+    jz buffer_clear
+    mov ah, 0x00
+    int 16h
+    jmp wait_for_key
+    
+buffer_clear:
+    ; Wait for keypress
+    mov ah, 0x00
+    int 16h
+    
+    ; Exit to DOS
+    mov ah, 0x4C
+    xor al, al
+    int 21h
 
-draw_score:
-    ; Draw score info at top right
+draw_screen:
+    ; Set cursor to top left
     mov ah, 0x02
     mov bh, 0
-    mov dx, 0050h   ; Row 0, col 50
+    mov dx, 0
     int 10h
-    mov ah, 0x09
-    mov dx, score_msg
-    int 21h
-    ret
-
-draw_snake:
+    
+    ; Draw title
+    mov si, score_msg
+    call print_string
+    
+    ; Draw snake
     xor di, di
-    movzx si, byte [snake_length]
+    movzx cx, byte [snake_length]
 draw_snake_loop:
-    mov ah, 2
+    mov ah, 0x02
     mov bh, 0
     mov dl, [snake_x + di]
     mov dh, [snake_y + di]
     int 10h
-    mov ah, 0x0E
+    
+    mov ah, 0x09
     mov al, [snake_char]
+    mov bh, 0
+    mov bl, 0x0A        ; Green
+    mov cx, 1
     int 10h
+    
     inc di
-    dec si
-    jnz draw_snake_loop
-    ret
-
-draw_fruit:
-    mov ah, 2
+    loop draw_snake_loop
+    
+    ; Draw fruit
+    mov ah, 0x02
     mov bh, 0
     mov dl, [fruit_x]
     mov dh, [fruit_y]
     int 10h
-    mov ah, 0x0E
+    
+    mov ah, 0x09
     mov al, [fruit_char]
+    mov bh, 0
+    mov bl, 0x0C        ; Red
+    mov cx, 1
     int 10h
+    
     ret
 
-generate_fruit:
-    ; Get timer ticks for randomization
-    mov ah, 0
-    int 1Ah
-    ; DX:CX contains tick count
-    ; Use low word for X coordinate
-    mov ax, dx
-    xor dx, dx
-    mov bl, 78      ; Width - 2 (avoid edges)
-    div bl
-    add al, 1       ; Add 1 to avoid 0
-    mov [fruit_x], al
-    
-    ; Use high word for Y coordinate
-    mov ah, 0
-    int 1Ah
-    mov ax, cx
-    xor dx, dx
-    mov bl, 23      ; Height - 2 (avoid edges)
-    div bl
-    add al, 1       ; Add 1 to avoid 0
-    mov [fruit_y], al
+print_string:
+    lodsb
+    or al, al
+    jz print_done
+    mov ah, 0x0E
+    int 10h
+    jmp print_string
+print_done:
     ret
 
 get_input:
     mov ah, 0x01
     int 16h
-    jz no_key
+    jz no_input
+    
     mov ah, 0
     int 16h
-    mov [key], al
-no_key:
+    
+    ; Check for WASD keys
+    cmp al, 'w'
+    je set_up
+    cmp al, 's'
+    je set_down
+    cmp al, 'a'
+    je set_left
+    cmp al, 'd'
+    je set_right
+    jmp no_input
+    
+set_up:
+    cmp byte [direction], 's'
+    je no_input
+    mov byte [direction], 'w'
+    jmp no_input
+set_down:
+    cmp byte [direction], 'w'
+    je no_input
+    mov byte [direction], 's'
+    jmp no_input
+set_left:
+    cmp byte [direction], 'd'
+    je no_input
+    mov byte [direction], 'a'
+    jmp no_input
+set_right:
+    cmp byte [direction], 'a'
+    je no_input
+    mov byte [direction], 'd'
+    
+no_input:
     ret
 
-update_snake_position:
-    mov al, [key]
+update_snake:
+    ; Move body segments (from tail to head)
+    movzx cx, byte [snake_length]
+    cmp cx, 1
+    jle move_head           ; If length is 1, just move head
+    
+    mov si, cx
+    dec si                  ; Start from last segment
+move_body_loop:
+    cmp si, 1
+    jl move_head            ; Stop when we reach position 0
+    
+    ; Copy position from [si-1] to [si]
+    mov di, si
+    dec di
+    mov al, [snake_x + di]
+    mov [snake_x + si], al
+    mov al, [snake_y + di]
+    mov [snake_y + si], al
+    
+    dec si
+    jmp move_body_loop
+    
+move_head:
+    ; Move head based on direction
+    mov al, [direction]
     cmp al, 'w'
     je move_up
     cmp al, 's'
@@ -181,127 +225,110 @@ update_snake_position:
     je move_left
     cmp al, 'd'
     je move_right
-    ; If no valid key, don't move
     ret
-
+    
 move_up:
-    call move_snake_body
-    mov al, [snake_y]
-    dec al
-    mov [snake_y], al
+    dec byte [snake_y]
     ret
-
 move_down:
-    call move_snake_body
-    mov al, [snake_y]
-    inc al
-    mov [snake_y], al
+    inc byte [snake_y]
     ret
-
 move_left:
-    call move_snake_body
-    mov al, [snake_x]
-    dec al
-    mov [snake_x], al
+    dec byte [snake_x]
     ret
-
 move_right:
-    call move_snake_body
-    mov al, [snake_x]
-    inc al
-    mov [snake_x], al
-    ret
-
-move_snake_body:
-    movzx si, byte [snake_length]
-    dec si
-move_snake_body_loop:
-    cmp si, 0
-    je move_snake_body_done
-    dec si
-    mov al, [snake_x + si]
-    mov [snake_x + si + 1], al
-    mov al, [snake_y + si]
-    mov [snake_y + si + 1], al
-    jmp move_snake_body_loop
-move_snake_body_done:
-    ret
-
-check_eat_fruit:
-    mov al, [snake_x]
-    cmp al, [fruit_x]
-    jne not_eating_fruit
-    mov al, [snake_y]
-    cmp al, [fruit_y]
-    jne not_eating_fruit
-    inc byte [snake_length]
-    call generate_fruit
-not_eating_fruit:
+    inc byte [snake_x]
     ret
 
 check_collisions:
+    xor ax, ax
+    
     ; Check wall collisions
     mov al, [snake_x]
     cmp al, 0
-    jle collision_detected_jmp
-    cmp al, [screen_width]
-    jge collision_detected_jmp
+    jle collision
+    cmp al, 79
+    jge collision
+    
     mov al, [snake_y]
-    cmp al, 0
-    jle collision_detected_jmp
-    cmp al, [screen_height]
-    jge collision_detected_jmp
+    cmp al, 1
+    jle collision
+    cmp al, 24
+    jge collision
     
     ; Check self collision
-    xor si, si
-    inc si
-collision_loop:
+    mov si, 1
+self_collision_loop:
     movzx cx, byte [snake_length]
     cmp si, cx
-    jge no_self_collision
+    jge no_collision
+    
     mov al, [snake_x]
     cmp al, [snake_x + si]
-    jne next_check
+    jne next_segment
     mov al, [snake_y]
     cmp al, [snake_y + si]
-    je collision_detected_jmp
-next_check:
+    je collision
+    
+next_segment:
     inc si
-    jmp collision_loop
-
-collision_detected_jmp:
-    mov ax, 1  ; Set flag for collision
+    jmp self_collision_loop
+    
+collision:
+    mov ax, 1
+    ret
+    
+no_collision:
+    xor ax, ax
     ret
 
-no_self_collision:
-    xor ax, ax  ; Clear flag - no collision
+check_fruit:
+    mov al, [snake_x]
+    cmp al, [fruit_x]
+    jne no_fruit
+    mov al, [snake_y]
+    cmp al, [fruit_y]
+    jne no_fruit
+    
+    ; Ate fruit - grow snake
+    inc byte [snake_length]
+    call generate_fruit
+    
+no_fruit:
+    ret
+
+generate_fruit:
+    ; Get timer for random number
+    mov ah, 0
+    int 1Ah
+    
+    ; Use CX for X coordinate
+    mov ax, cx
+    xor dx, dx
+    mov bx, 78
+    div bx
+    add dl, 1
+    mov [fruit_x], dl
+    
+    ; Use DX for Y coordinate
+    mov ah, 0
+    int 1Ah
+    mov ax, dx
+    xor dx, dx
+    mov bx, 22
+    div bx
+    add dl, 2
+    mov [fruit_y], dl
     ret
 
 delay:
-    ; Slower delay - multiple nested loops
-    mov cx, 2       ; Outer loop count
+    mov cx, 1
 delay_outer:
     push cx
-    mov cx, 0FFFFh  ; Inner loop
-delay_loop:
+    mov cx, 0x8000
+delay_inner:
     nop
-    nop
-    loop delay_loop
+    loop delay_inner
     pop cx
     loop delay_outer
     ret
-
-game_over:
-    call clear_screen
-    mov ah, 0x09
-    mov dx, game_over_message
-    int 21h
-    ; Wait for keypress
-    mov ah, 0
-    int 16h
-    ret
-
-exit:
-    mov ah, 0x4C
-    xor al, al
-    int 21h
