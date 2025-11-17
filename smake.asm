@@ -12,11 +12,13 @@ snake_char db 219       ; Full block character
 fruit_char db 4         ; Diamond character
 direction db 'd'
 snake_length db 3
+score dw 0              ; Score counter
 snake_x times 255 db 0
 snake_y times 255 db 0
 fruit_x db 20
 fruit_y db 10
-score_msg db "SNAKE - WASD to move | Score: ", 0
+score_msg db "SNAKE - WASD | Score: ", 0
+score_buffer db "0000", 0
 game_over_msg db "GAME OVER! Press any key...", 0
 
 ; ----- CODE SECTION -----
@@ -93,6 +95,10 @@ buffer_clear:
     int 21h
 
 draw_screen:
+    ; Clear screen first
+    mov ax, 0x0003
+    int 10h
+    
     ; Set cursor to top left
     mov ah, 0x02
     mov bh, 0
@@ -102,6 +108,9 @@ draw_screen:
     ; Draw title
     mov si, score_msg
     call print_string
+    
+    ; Draw score
+    call print_score
     
     ; Draw snake
     xor di, di
@@ -137,6 +146,25 @@ draw_snake_loop:
     mov cx, 1
     int 10h
     
+    ret
+
+print_score:
+    ; Convert score to string
+    mov ax, [score]
+    mov di, score_buffer + 3  ; Start from the end
+    mov cx, 4
+convert_loop:
+    xor dx, dx
+    mov bx, 10
+    div bx
+    add dl, '0'
+    mov [di], dl
+    dec di
+    loop convert_loop
+    
+    ; Print score
+    mov si, score_buffer
+    call print_string
     ret
 
 print_string:
