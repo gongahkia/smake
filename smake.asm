@@ -323,16 +323,22 @@ no_collision:
     ret
 
 check_fruit:
+    ; Check if head position matches fruit position
     mov al, [snake_x]
-    cmp al, [fruit_x]
+    mov bl, [fruit_x]
+    cmp al, bl
     jne no_fruit
+    
     mov al, [snake_y]
-    cmp al, [fruit_y]
+    mov bl, [fruit_y]
+    cmp al, bl
     jne no_fruit
     
     ; Ate fruit - grow snake and increase score
     inc byte [snake_length]
     add word [score], 10    ; Add 10 points per fruit
+    
+    ; Generate new fruit
     call generate_fruit
     
 no_fruit:
