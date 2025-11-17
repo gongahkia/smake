@@ -363,14 +363,26 @@ check_fruit:
     cmp al, bl
     jne no_fruit
     
-    ; Ate fruit - grow snake and increase score
-    inc byte [snake_length]
+    ; Ate fruit - set growth flag and increase score
+    mov byte [grow_flag], 1
     add word [score], 10    ; Add 10 points per fruit
     
     ; Generate new fruit
     call generate_fruit
     
 no_fruit:
+    ret
+
+apply_growth:
+    ; Check if we should grow
+    cmp byte [grow_flag], 0
+    je no_growth
+    
+    ; Increase length and clear flag
+    inc byte [snake_length]
+    mov byte [grow_flag], 0
+    
+no_growth:
     ret
 
 generate_fruit:
