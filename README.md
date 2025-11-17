@@ -23,6 +23,10 @@ c:
 smake.com
 ```
 
+## Screenshot
+
+![](./asset/reference/image.png)
+
 ## Notes
 
 * I exclude any and all liability for hardware damage from running assembly and fiddling with BIOS. Know [the risks](https://www.reddit.com/r/learnprogramming/comments/xkv928/how_assembly_programming_can_be_dangerous/) before running this.
