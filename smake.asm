@@ -330,8 +330,9 @@ check_fruit:
     cmp al, [fruit_y]
     jne no_fruit
     
-    ; Ate fruit - grow snake
+    ; Ate fruit - grow snake and increase score
     inc byte [snake_length]
+    add word [score], 10    ; Add 10 points per fruit
     call generate_fruit
     
 no_fruit:
