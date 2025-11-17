@@ -195,12 +195,14 @@ update_snake:
     ; First, shift all body segments backwards (from tail to neck)
     movzx cx, byte [snake_length]
     dec cx                  ; Don't move the head yet
-    cmp cx, 0
-    jle move_head           ; If length is 1, just move head
+    jle move_head           ; If length is 1 or less, just move head
     
-    ; Start from the tail and work forward
-    mov si, cx              ; si = last segment index
+    ; Start from the tail (last segment) and move each segment to previous position
+    mov si, cx              ; si = last segment index (length - 1)
 shift_body:
+    cmp si, 1
+    jl move_head            ; Stop when si < 1
+    
     mov di, si
     dec di                  ; di = previous segment index
     
@@ -210,7 +212,7 @@ shift_body:
     mov [snake_y + si], al
     
     dec si
-    jnz shift_body          ; Continue until we reach segment 1
+    jmp shift_body
     
 move_head:
     ; Now move the head based on direction
@@ -227,34 +229,46 @@ move_head:
     
 move_up:
     dec byte [snake_y]
+    ; Wrap around vertically
+    cmp byte [snake_y], 0
+    jg up_done
+    mov byte [snake_y], 24
+up_done:
     ret
+    
 move_down:
     inc byte [snake_y]
+    ; Wrap around vertically
+    cmp byte [snake_y], 25
+    jl down_done
+    mov byte [snake_y], 1
+down_done:
     ret
+    
 move_left:
     dec byte [snake_x]
+    ; Wrap around horizontally
+    cmp byte [snake_x], 0
+    jge left_done
+    mov byte [snake_x], 79
+left_done:
     ret
+    
 move_right:
     inc byte [snake_x]
+    ; Wrap around horizontally
+    cmp byte [snake_x], 80
+    jl right_done
+    mov byte [snake_x], 0
+right_done:
     ret
 
 check_collisions:
     xor ax, ax
     
-    ; Check wall collisions
-    mov al, [snake_x]
-    cmp al, 0
-    jle collision
-    cmp al, 79
-    jge collision
+    ; Skip wall collision check - wrapping is enabled
     
-    mov al, [snake_y]
-    cmp al, 1
-    jle collision
-    cmp al, 24
-    jge collision
-    
-    ; Check self collision
+    ; Check self collision only
     mov si, 1
 self_collision_loop:
     movzx cx, byte [snake_length]
