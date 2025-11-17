@@ -192,30 +192,28 @@ no_input:
     ret
 
 update_snake:
-    ; Move body segments (from tail to head)
+    ; First, shift all body segments backwards (from tail to neck)
     movzx cx, byte [snake_length]
-    cmp cx, 1
+    dec cx                  ; Don't move the head yet
+    cmp cx, 0
     jle move_head           ; If length is 1, just move head
     
-    mov si, cx
-    dec si                  ; Start from last segment
-move_body_loop:
-    cmp si, 1
-    jl move_head            ; Stop when we reach position 0
-    
-    ; Copy position from [si-1] to [si]
+    ; Start from the tail and work forward
+    mov si, cx              ; si = last segment index
+shift_body:
     mov di, si
-    dec di
+    dec di                  ; di = previous segment index
+    
     mov al, [snake_x + di]
     mov [snake_x + si], al
     mov al, [snake_y + di]
     mov [snake_y + si], al
     
     dec si
-    jmp move_body_loop
+    jnz shift_body          ; Continue until we reach segment 1
     
 move_head:
-    ; Move head based on direction
+    ; Now move the head based on direction
     mov al, [direction]
     cmp al, 'w'
     je move_up
