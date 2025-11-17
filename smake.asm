@@ -12,6 +12,7 @@ snake_char db 219       ; Full block character
 fruit_char db 4         ; Diamond character
 direction db 'd'
 snake_length db 3
+grow_flag db 0          ; Flag to indicate if snake should grow
 score dw 0              ; Score counter
 snake_x times 255 db 0
 snake_y times 255 db 0
@@ -50,6 +51,7 @@ game_loop:
     cmp ax, 0
     jne game_over
     call check_fruit
+    call apply_growth
     call delay
     jmp game_loop
 
@@ -220,7 +222,11 @@ no_input:
     ret
 
 update_snake:
-    ; First, shift all body segments backwards (from tail to neck)
+    ; Check if we're growing
+    cmp byte [grow_flag], 1
+    je skip_tail_shift
+    
+    ; Normal movement: shift all body segments backwards (from tail to neck)
     movzx cx, byte [snake_length]
     dec cx                  ; Don't move the head yet
     jle move_head           ; If length is 1 or less, just move head
@@ -241,6 +247,29 @@ shift_body:
     
     dec si
     jmp shift_body
+
+skip_tail_shift:
+    ; When growing, shift from second-to-last segment
+    movzx cx, byte [snake_length]
+    dec cx
+    dec cx                  ; length - 2
+    jle move_head
+    
+    mov si, cx
+shift_body_grow:
+    cmp si, 1
+    jl move_head
+    
+    mov di, si
+    dec di
+    
+    mov al, [snake_x + di]
+    mov [snake_x + si], al
+    mov al, [snake_y + di]
+    mov [snake_y + si], al
+    
+    dec si
+    jmp shift_body_grow
     
 move_head:
     ; Now move the head based on direction
