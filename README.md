@@ -4,21 +4,43 @@
 
 ## Install
 
-Smake requires a Debian-based distro, and depends on [NASM](https://www.nasm.us/) and [DOSBox](https://www.dosbox.com/).
+### Linux (Debian-based)
 
 ```console
-$ sudo apt install Make
+$ sudo apt install make nasm dosbox
 $ git clone https://github.com/gongahkia/smake
 $ cd smake
-$ make config
+$ make build
+```
+
+### macOS
+
+```console
+$ brew install nasm dosbox
+$ git clone https://github.com/gongahkia/smake
+$ cd smake
 $ make build
 ```
 
 ## Usage
 
 ```console
-$ make 
+$ make run
 ```
+
+Then in DOSBox, type:
+```
+mount c .
+c:
+smake.com
+```
+
+### Controls
+
+- `W` - Move up
+- `S` - Move down
+- `A` - Move left
+- `D` - Move right
 
 ## Notes
 

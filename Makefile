@@ -1,19 +1,19 @@
-all:
-	run
+all: run
 
-run:
+run: build
+	@echo "Starting DOSBox. Type the following commands in DOSBox:"
+	@echo "  mount c ."
+	@echo "  c:"
+	@echo "  smake.com"
 	dosbox
-	mount c smake
-	cd smake
-	snakey.com
 
 build:
-	nasm -f bin smake.asm -o smakey.com
+	nasm -f bin smake.asm -o smake.com
 
 config:
-	sudo apt update; sudo apt upgrade; sudo apt autoremove
+	sudo apt update && sudo apt upgrade && sudo apt autoremove
 	sudo apt install dosbox
 	sudo apt install nasm
 
 clean:
-	rm -rf .git .gitignore README.md
+	rm -f smake.com
